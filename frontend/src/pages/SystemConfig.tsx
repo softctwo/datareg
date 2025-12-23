@@ -12,14 +12,21 @@ import {
   Tag,
   Popconfirm,
   Tabs,
-  Card
+  Card,
+  InputNumber,
+  Tooltip,
+  Alert
 } from 'antd'
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
-  SettingOutlined
+  SettingOutlined,
+  SearchOutlined,
+  ExportOutlined,
+  EyeOutlined,
+  CopyOutlined
 } from '@ant-design/icons'
 import { systemConfigApi } from '../services/api'
 import type { ColumnsType } from 'antd/es/table'
@@ -59,14 +66,23 @@ const SystemConfig: React.FC = () => {
   const [userPermissions, setUserPermissions] = useState<string[]>([])
   const [searchText, setSearchText] = useState<string>('')
 
-  useEffect(() => {
-    loadData()
-    fetchUserPermissions()
-  }, [activeTab])
-
   const fetchUserPermissions = async () => {
     const permissions = await getUserPermissions()
     setUserPermissions(permissions)
+  }
+
+  const filterData = (configs: SystemConfig[], search: string) => {
+    if (!search.trim()) {
+      setFilteredData(configs)
+      return
+    }
+    const filtered = configs.filter(config => 
+      config.config_key.toLowerCase().includes(search.toLowerCase()) ||
+      config.config_name.toLowerCase().includes(search.toLowerCase()) ||
+      (config.description && config.description.toLowerCase().includes(search.toLowerCase())) ||
+      config.config_value.toLowerCase().includes(search.toLowerCase())
+    )
+    setFilteredData(filtered)
   }
 
   const loadData = async () => {
@@ -88,38 +104,17 @@ const SystemConfig: React.FC = () => {
       } else if (status === 403) {
         message.error('权限不足，无法访问系统配置')
       }
+      setData([])
+      setFilteredData([])
     } finally {
       setLoading(false)
     }
   }
 
-  const filterData = (configs: SystemConfig[], search: string) => {
-    if (!search.trim()) {
-      setFilteredData(configs)
-      return
-    }
-    const filtered = configs.filter(config => 
-      config.config_key.toLowerCase().includes(search.toLowerCase()) ||
-      config.config_name.toLowerCase().includes(search.toLowerCase()) ||
-      (config.description && config.description.toLowerCase().includes(search.toLowerCase())) ||
-      config.config_value.toLowerCase().includes(search.toLowerCase())
-    )
-    setFilteredData(filtered)
-  }
-
-  const filterData = (configs: SystemConfig[], search: string) => {
-    if (!search.trim()) {
-      setFilteredData(configs)
-      return
-    }
-    const filtered = configs.filter(config => 
-      config.config_key.toLowerCase().includes(search.toLowerCase()) ||
-      config.config_name.toLowerCase().includes(search.toLowerCase()) ||
-      (config.description && config.description.toLowerCase().includes(search.toLowerCase())) ||
-      config.config_value.toLowerCase().includes(search.toLowerCase())
-    )
-    setFilteredData(filtered)
-  }
+  useEffect(() => {
+    loadData()
+    fetchUserPermissions()
+  }, [activeTab])
 
   useEffect(() => {
     filterData(data, searchText)
@@ -404,7 +399,7 @@ const SystemConfig: React.FC = () => {
 
         <Table
           columns={columns}
-          dataSource={filteredData}
+          dataSource={filteredData.length > 0 ? filteredData : data}
           rowKey="id"
           loading={loading}
           scroll={{ x: 1500 }}
